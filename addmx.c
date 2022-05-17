@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/mman.h>
+
 #define MAX_STR_SIZE 64
 #define CHAR_INT_OFFSET 48
 
@@ -75,8 +77,6 @@ int main(int argc, char *argv[]){
 	fgetc(fp1); // skip '\n' in file1 line 1	
 	fgetc(fp2); // skip '\n' in file2 line 1
 
-	printf("n1:%d, n2:%d, m1:%d, m2:%d\n", n1, n2, m1, m2);
-
 	if(n1!=n2 || m1!=m2){
 		printf("The matrices are not of the same size!\n");
 		return 0;
@@ -85,7 +85,14 @@ int main(int argc, char *argv[]){
 	matrix* mtx1 = matrix_new(n1, m1);
 	matrix* mtx2 = matrix_new(n2, m2);
 	matrix* mtx3 = matrix_new(n1, m1);
+
 	
+
+	mtx1->vals = (int*)mmap(NULL, n1*m1*sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
+	mtx2->vals = (int*)mmap(NULL, n2*m2*sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
+	mtx3->vals = (int*)mmap(NULL, n1*m1*sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
+	
+
 	int i, j;
 	char c1, c2;
 
@@ -94,13 +101,12 @@ int main(int argc, char *argv[]){
 			c1 = fgetc(fp1);
 			c2 = fgetc(fp2);
 			if(c1!=' ' && c1!='\n' && c2!=' ' && c2!='\n'){
-				matrix_set(i,j,(int)(c1)-CHAR_INT_OFFSET,mtx1);
+				matrix_set(i,j,(int)(c1)-CHAR_INT_OFFSET,mtx1);	
 				matrix_set(i,j,(int)(c2)-CHAR_INT_OFFSET,mtx2);
 			}else{
 				j--;
 			}
 		}
-
 	}
 
 	for(i=0; i<m1; i++){ // creates m children directly from parent
